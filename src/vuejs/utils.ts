@@ -1,12 +1,19 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import type { QueryKey } from "react-query/lib/core";
 import { isRef, unref, UnwrapRef } from "vue-demi";
+import { QueryClient } from "./queryClient";
 
 export const VUE_QUERY_CLIENT = "VUE_QUERY_CLIENT";
+export const VUE_QUERY_CLIENTS: { [name: string]: QueryClient } = {};
 
 export function getClientKey(key?: string) {
   const suffix = key ? `:${key}` : "";
   return `${VUE_QUERY_CLIENT}${suffix}`;
+}
+
+export function getClient(key?: string) {
+  if (key?.length) return VUE_QUERY_CLIENTS[key];
+  return undefined;
 }
 
 export function isQueryKey(value: unknown): value is QueryKey {

@@ -2,7 +2,7 @@ import { isVue2 } from "vue-demi";
 import type { QueryClientConfig } from "react-query/lib/core";
 
 import { QueryClient } from "./queryClient";
-import { getClientKey } from "./utils";
+import { getClient, getClientKey, VUE_QUERY_CLIENTS } from "./utils";
 import { setupDevtools } from "./devtools/devtools";
 import { MaybeRefDeep } from "./types";
 
@@ -55,8 +55,13 @@ export const VueQueryPlugin = {
           "queryClientConfig" in options
             ? options.queryClientConfig
             : undefined;
-        client = new QueryClient(clientConfig);
+        client =
+          getClient(options.queryClientKey) ?? new QueryClient(clientConfig);
       }
+    }
+
+    if (options.queryClientKey?.length) {
+      VUE_QUERY_CLIENTS[options.queryClientKey] = client;
     }
 
     client.mount();
