@@ -3,7 +3,7 @@ import { isVue2, isVue3 } from "vue-demi";
 
 import type { QueryClient } from "../queryClient";
 import { VueQueryPlugin } from "../vueQueryPlugin";
-import { VUE_QUERY_CLIENT } from "../utils";
+import { VUE_QUERY_CLIENT, VUE_QUERY_CLIENTS } from "../utils";
 import { setupDevtools } from "../devtools/devtools";
 
 jest.mock("../devtools/devtools");
@@ -37,7 +37,9 @@ function getAppMock(withUnmountHook = false): TestApp {
 describe("VueQueryPlugin", () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    window.__VUE_QUERY_CONTEXT__ = undefined;
+    for (const key in VUE_QUERY_CLIENTS) {
+      delete VUE_QUERY_CLIENTS[key];
+    }
   });
 
   describe("devtools", () => {
@@ -226,28 +228,28 @@ describe("VueQueryPlugin", () => {
   describe("when context sharing is enabled", () => {
     test("should create context if it does not exist", () => {
       const appMock = getAppMock();
-      VueQueryPlugin.install?.(appMock, { contextSharing: true });
+      VueQueryPlugin.install?.(appMock, { queryClientKey: "contextSharing" });
 
-      expect(window.__VUE_QUERY_CONTEXT__).toBeTruthy();
+      expect(VUE_QUERY_CLIENTS["contextSharing"]).toBeTruthy();
     });
 
     test("should create context with options if it does not exist", () => {
       const appMock = getAppMock();
       VueQueryPlugin.install?.(appMock, {
-        contextSharing: true,
+        queryClientKey: "shared",
         queryClientConfig: { defaultOptions: { queries: { staleTime: 5000 } } },
       });
 
       expect(
-        window.__VUE_QUERY_CONTEXT__?.getDefaultOptions().queries?.staleTime
+        VUE_QUERY_CLIENTS["shared"]?.getDefaultOptions().queries?.staleTime
       ).toEqual(5000);
     });
 
     test("should use existing context", () => {
       const customClient = { mount: jest.fn() } as unknown as QueryClient;
-      window.__VUE_QUERY_CONTEXT__ = customClient;
+      VUE_QUERY_CLIENTS["1"] = customClient;
       const appMock = getAppMock();
-      VueQueryPlugin.install?.(appMock, { contextSharing: true });
+      VueQueryPlugin.install?.(appMock, { queryClientKey: "1" });
 
       expect(customClient.mount).toHaveBeenCalledTimes(1);
     });

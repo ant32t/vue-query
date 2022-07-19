@@ -2,15 +2,9 @@ import { isVue2 } from "vue-demi";
 import type { QueryClientConfig } from "react-query/lib/core";
 
 import { QueryClient } from "./queryClient";
-import { getClientKey } from "./utils";
+import { getClient, getClientKey, VUE_QUERY_CLIENTS } from "./utils";
 import { setupDevtools } from "./devtools/devtools";
 import { MaybeRefDeep } from "./types";
-
-declare global {
-  interface Window {
-    __VUE_QUERY_CONTEXT__?: QueryClient;
-  }
-}
 
 export interface AdditionalClient {
   queryClient: QueryClient;
@@ -20,13 +14,11 @@ export interface AdditionalClient {
 interface ConfigOptions {
   queryClientConfig?: MaybeRefDeep<QueryClientConfig>;
   queryClientKey?: string;
-  contextSharing?: boolean;
 }
 
 interface ClientOptions {
   queryClient?: QueryClient;
   queryClientKey?: string;
-  contextSharing?: boolean;
 }
 
 export type VueQueryPluginOptions = ConfigOptions | ClientOptions;
@@ -39,24 +31,14 @@ export const VueQueryPlugin = {
     if ("queryClient" in options && options.queryClient) {
       client = options.queryClient;
     } else {
-      if (options.contextSharing && typeof window !== "undefined") {
-        if (!window.__VUE_QUERY_CONTEXT__) {
-          const clientConfig =
-            "queryClientConfig" in options
-              ? options.queryClientConfig
-              : undefined;
-          client = new QueryClient(clientConfig);
-          window.__VUE_QUERY_CONTEXT__ = client;
-        } else {
-          client = window.__VUE_QUERY_CONTEXT__;
-        }
-      } else {
-        const clientConfig =
-          "queryClientConfig" in options
-            ? options.queryClientConfig
-            : undefined;
-        client = new QueryClient(clientConfig);
-      }
+      const clientConfig =
+        "queryClientConfig" in options ? options.queryClientConfig : undefined;
+      client =
+        getClient(options.queryClientKey) ?? new QueryClient(clientConfig);
+    }
+
+    if (options.queryClientKey?.length) {
+      VUE_QUERY_CLIENTS[options.queryClientKey] = client;
     }
 
     client.mount();

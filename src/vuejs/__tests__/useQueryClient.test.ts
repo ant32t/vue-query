@@ -1,6 +1,6 @@
-import { getCurrentInstance, inject } from "vue-demi";
+import { getCurrentInstance, effectScope, inject } from "vue-demi";
 import { useQueryClient } from "../useQueryClient";
-import { VUE_QUERY_CLIENT } from "../utils";
+import { VUE_QUERY_CLIENT, VUE_QUERY_CLIENTS } from "../utils";
 
 describe("useQueryClient", () => {
   const injectSpy = inject as jest.Mock;
@@ -46,5 +46,17 @@ describe("useQueryClient", () => {
     useQueryClient(queryClientKey);
 
     expect(injectSpy).toHaveBeenCalledWith(expectedKeyParameter);
+  });
+
+  test("should return queryClient when run in detached effectScope", () => {
+    const queryClientMock = { name: "Mocked client" };
+    injectSpy.mockReturnValueOnce(queryClientMock);
+    getCurrentInstanceSpy.mockReturnValueOnce(undefined);
+
+    effectScope().run(() => {
+      VUE_QUERY_CLIENTS["default"] = queryClientMock as any;
+      const queryClient = useQueryClient("default");
+      expect(queryClient).toStrictEqual(queryClientMock);
+    });
   });
 });
